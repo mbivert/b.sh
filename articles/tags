@@ -1,0 +1,35 @@
+Title: Liste des tags
+Tags: 0
+Date: 20111126
+Fmt: sh
+
+ltags=`sed -n 's/^Tags: *//p' $SRC/* | tr -s ',' '\n' | sort | uniq`
+
+echo '<ul>'
+for t in $ltags; do
+	echo "<li id=\"$t\">$t:<ul>"
+	for a in `grep -l "^Tags:.*$t" $SRC/*`; do
+		ad=`basename $a`.html
+		echo '<li>'
+		echo "<a href=\"$ad\">"
+		sed -n 's/^Title:[ \t]*//p' $a
+		echo '</a>'
+		echo '</li>'
+	done
+	echo '</ul>'
+done
+echo '</ul>'
+
+# now add some js to display only the optional anchor-specified tag
+cat <<EOF
+<script type="text/javascript">
+var selected = window.location.hash.substr(1);
+var x = document.getElementsByTagName("li");
+if (selected != "")
+for (var i = 0; i < x.length; i++) {
+        if (x[i].id && x[i].id != selected) {
+                document.getElementById(x[i].id).style.display = "none";
+        }
+}
+</script>
+EOF

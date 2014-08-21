@@ -1,0 +1,167 @@
+Title: blog.sh (en)
+Tags: shell,blog
+Date: 20111126
+Fmt: with tag lang mdown
+
+= Synopsis
+With SRC and DST being two directories:
+
+  b.sh [SRC [DST]]
+
+= Description
+[b.sh](b.sh.html) is a html files generator. For each file
+of SRC, it creates an html file in DST. Both SRC and DST are
+set to the current directory if not specified from command
+line. These two variables are also exported by the script
+along with ART, which points to the current file in SRC.
+
+A rss feed is also generated in RSS.
+
+= Article's format
+An article contains a empty-line-terminated header followed
+by the body of the article. The header contains lines
+prefixed by a word indicating the content of the line.
+The following three informations are mandatory:
+
+ Title : article title
+ Date : publication date (YYYYMMDD);
+ Fmt : name program to generate html from body
+
+For instance, the following header is used for this article:
+
+  Title: blog.sh (en)
+  Tags: shell,blog
+  Fmt: with tag lang mdown
+
+= Setting examples
+== Files index
+An index of the articles can be created as an article containing
+a shell script, and thus formatted with sh :
+
+  Title: Articles
+  Tags: 0
+  Date: 20111012
+  Fmt: sh
+  
+  echo '<ul>'
+  for a in `grep '^Date:' \$SRC/* /dev/null | sort -rn +1 | \
+  		awk -F':' '{ print $1 }'`; do
+  	ad=$DST/`basename $a`.html
+  	echo '<li>'
+  	echo "<a href=\"$ad\">"
+  	sed -n 's/^Title:[ \t]*//p' $a
+  	echo '</a>'
+  	echo '</li>'
+  done
+  echo '</ul>'
+
+== Translation of an article
+The ART environment variable contains the name of the current article.
+By adding a \.lang suffix the the article name, one can create a
+little  formater to generate existing translation of ART:
+
+  #!/bin/sh
+  
+  art=`echo $ART | sed 's/\(.*\)\..*/\1/'`
+  
+  echo '<p class="translations">'
+  for tr in `ls $art.* 2>/dev/null`; do
+  	td=`basename $tr`.html
+  	echo -n "<a href=\"$td\">"
+  	echo -n $tr | sed 's/.*\.//'
+  	echo -n '</a>,'
+  done | sed '$s/,$//g' # remove last coma
+  echo '</p>'
+
+The same thing can be done by adding attributes, but this would
+require more work.
+
+== Tag management
+Using both of the previous technics, we can create a
+formater that looks for ART's tags and output them:
+
+
+  #!/bin/sh
+  
+  echo '<p class="tags">'
+  IFS=','; for t in `sed -n 's/^Tags:[ \t]*//p' $ART`; do
+  	echo "<a href=\"tags.html#$t\">$t</a>"
+  done
+  echo '</p>'
+
+The file tags.html can be generated from a article listing
+existing tags and their associated articles:
+
+  Title: Tags listing
+  Tags: 0
+  Date: 20111012
+  Fmt: sh
+  
+  ltags=`sed -n 's/^Tags:[ \t]*//p' $SRC/* | tr -s ',' '\n' | sort | uniq`
+  
+  echo '<ul>'
+  for t in $ltags; do
+  	echo "<li id=\"$t\">$t:<ul>"
+  	for a in `grep -l "^Tags:.*$t" $SRC/*`; do
+  		ad=$DST/`basename $a`.html
+  		echo '<li>'
+  		echo "<a href=\"$ad\">"
+  		sed -n 's/^Title:[ \t]*//p' $a
+  		echo '</a>'
+  		echo '</li>'
+  	done
+  	echo '</ul>'
+  done
+  echo '</ul>'
+
+One can add some javascript to hide all but a ancor-specified tag:
+
+  cat <<EOF
+  <script type="text/javascript">
+  var selected = window.location.hash.substr(1);
+  var x = document.getElementsByTagName("li");
+  if (selected != "")
+  for (var i = 0; i < x.length; i++) {
+          if (x[i].id && x[i].id != selected) {
+                  document.getElementById(x[i].id).style.display = "none";
+          }
+  }
+  </script>
+  EOF
+
+== Using with
+With is a short shell script evaluating its argument in their
+order. Evaluation allows to use pipe'd program to format the
+body using multiple programs.
+
+  #!/bin/sh
+  
+  # by default, output the text
+  [ "$1" = "" ] && set -- cat
+  
+  for cmd in $*; do
+  	eval $cmd
+  done
+
+For example, with such a Fmt line:
+
+  Fmt: with tag lang p9man|mdown
+
+we first output tags and translations of the articles, followed
+by the body, formatted sequentially by p9man and mdown. P9man
+convert text chunks such as command(number) into a mdown link
+pointing to the associated manual page:
+
+  #!/bin/sh
+  
+  if [ "$1" = "" ]; then
+  	URL=http://plan9.bell-labs.com/magic/man2html/
+  else
+  	URL=$1
+  fi
+  
+  # assume mdown and thus don't replace in <pre><code> lines
+  sed '/^  /!s,\([a-z0-9\.]*\)(\([0-9]\)),[\1(\2)]('$URL'\2/\1),g'
+
+= Notes
+blog.sh should run on any POSIX compatible system.

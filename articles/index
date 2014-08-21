@@ -1,0 +1,24 @@
+Title: Liste des articles
+Tags: 0
+Date: 20111126
+Fmt: sh
+
+# avoid filenames manipulations
+cd $SRC
+
+echo '<ul>'
+# get date and html
+for i in `ls | grep -v '^index\|tags$'`; do
+	awk '
+		/^Date:/ { d=$2; }
+		/^Title:/ { $1=""; t=$0; }
+		END {
+			print sprintf("\t<li> %d <a href=\"%s.html\">%s</a></li>",
+				d, FILENAME, t)
+		}' $i
+done |\
+	sort -rn +1  |\
+	# fmtdate
+	sed -e 's/\([0-9][0-9][0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)/\3-\2-\1/'
+
+echo '</ul>'

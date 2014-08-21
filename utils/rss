@@ -1,0 +1,35 @@
+#!/bin/sh
+
+. utils/lib
+
+cat <<EOF > $DST/$RSS
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xml-stylesheet type="text/css" href="../styles/feed.css" ?>
+<rss version="2.0">
+<channel>
+	<title>rss feed</title>
+	<description>random stuff</description>
+	<link>$URL</link>
+	<lastBuildDate>$(date)</lastBuildDate>
+	<pubDate>$(date)</pubDate>
+	<ttl>1800</ttl>
+EOF
+
+# sort by date
+for a in `grep '^Date:' $SRC/* /dev/null | sort -rn +1 | \
+		awk -F':' '{ print $1 }'`; do
+	link=$URL$DST`basename $a`.html
+	cat <<EOF >> $DST/$RSS
+		<item>
+			<title>$(getattr Title $a)</title>
+			<link>$link</link>
+			<guid isPermaLink="true">$link</guid>
+			<pubDate>$(getattr Date $a | fmtdate)</pubDate>
+		</item>
+EOF
+done
+
+cat <<EOF >> $DST/$RSS
+</channel>
+</rss>
+EOF

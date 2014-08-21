@@ -1,0 +1,223 @@
+Title: blog.sh (fr)
+Tags: shell,blog
+Date: 20110822
+Fmt: with tag lang toc mdown
+
+= Synopsis
+Avec SRC un répertoire ou un fichier et DST un répertoire:
+
+  b.sh [SRC [DST]]
+
+= Description
+[b.sh](b.sh.html) est un générateur de fichiers
+html. Pour chaque fichier de SRC un fichier est créee dans DST.
+Par défaut, SRC et DST sont affectées au répertoire courant.
+Enfin, ces deux variables sont exportées par le script, tout comme
+ART, qui contient le nom de l'article courant.
+Si SRC est un fichier, b.sh le génère dans DST.
+
+Un flux rss (RSS) représentant les articles est aussi généré, en
+utilisant utils\/rss. Le nom du fichier RSS est exporté par b.sh.
+
+= Format des articles
+Un article est composé d'un header terminé par une ligne vide et
+suivi d'un corps. Le header contient un bloc de lignes, généralement
+préfixées par un mot indiquant l'information portée par la ligne.
+Les trois informations suivantes sont requises dans un article:
+
+ Title : le titre de l'article;
+ Date : la date de publication de l'article (AAAAMMJJ);
+ Fmt : le nom du programme permettant de générer du html depuis le corps.
+
+Par exemple, le header de cet article est le  suivant:
+
+  Title: blog.sh (fr)
+  Tags: shell,blog
+  Date: 20110822
+  Fmt: with tag lang toc mdown
+
+= Exemples d'utilisation
+== Index des fichiers
+Un index des articles peut être crée à partir d'un script shell,
+présenté comme un article dont le formateur est sh:
+
+  Title: Liste des articles
+  Tags: 0
+  Date: 20111126
+  Fmt: sh
+  
+  # avoid filenames manipulations
+  cd $SRC
+  
+  echo '<ul>'
+  # get date and html
+  for i in `ls | grep -v 'index\|tags'`; do
+  	awk '
+  		/^Date:/ { d=$2; }
+  		/^Title:/ { $1=""; t=$0; }
+  		END {
+  			print sprintf("\t<li> %d <a href=\"%s.html\">%s</a></li>",
+  				d, FILENAME, t)
+  		}' $i
+  done |\
+  	sort -rn +1  |\
+  	# fmtdate-like
+  	sed -e 's/\([0-9][0-9][0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)/\3-\2-\1/'
+  
+  echo '</ul>'
+
+== Traductions d'un article
+La variable d'environnement ART contient le nom du fichier courant.
+En ajoutant au nom du fichier un suffixe \.lang, on peut alors facilement
+créer un petit formatteur permettant de générer une liste des traductions
+de l'article courant:
+
+  #!/bin/sh
+  
+  art=`echo $ART | sed 's/\(.*\)\..*/\1/'`
+  
+  echo '<p class="translations">Lang.:'
+  for tr in `ls $art.* 2>/dev/null`; do
+  	td=`basename $tr`.html
+  	echo -n "<a href=\"$td\">"
+  	echo -n $tr | sed 's/.*\.//'
+  	echo -n '</a>,'
+  done | sed '$s/,$//g' # remove last coma
+  echo '</p>'
+
+Il est bien entendu possible de réaliser la même chose en ajoutant
+des attributs; la modification du nom du fichier induit néamoins un
+comportement plus simple.
+
+== Gestion des tags
+En mélangeant les deux techniques précèdentes, on peut utiliser
+un formatteur recherchant les tags de ART et les affichant:
+
+  #!/bin/sh
+  
+  echo '<p class="tags">'
+  IFS=','; for t in `sed -n 's/^Tags:[ \t]*//p' $ART`; do
+  	echo "<a href=\"tags.html#$t\">$t</a>"
+  done
+  echo '</p>'
+
+Fonctionnant de pair avec un article recenscant les tags:
+
+  Title: Liste des tags
+  Tags: 0
+  Date: 20111012
+  Fmt: sh
+  
+  ltags=`sed -n 's/^Tags:[ \t]*//p' $SRC/* | tr -s ',' '\n' | sort | uniq`
+  
+  echo '<ul>'
+  for t in $ltags; do
+  	echo "<li id=\"$t\">$t:<ul>"
+  	for a in `grep -l "^Tags:.*$t" $SRC/*`; do
+  		ad=$DST/`basename $a`.html
+  		echo '<li>'
+  		echo "<a href=\"$ad\">"
+  		sed -n 's/^Title:[ \t]*//p' $a
+  		echo '</a>'
+  		echo '</li>'
+  	done
+  	echo '</ul>'
+  done
+  echo '</ul>'
+
+On peut ensuite rajouter du javascript via la balise <script>
+afin de n'afficher que le tag spécifié dans une ancre optionelle:
+
+  cat <<EOF
+  <script type="text/javascript">
+  var selected = window.location.hash.substr(1);
+  var x = document.getElementsByTagName("li");
+  if (selected != "")
+  for (var i = 0; i < x.length; i++) {
+          if (x[i].id && x[i].id != selected) {
+                  document.getElementById(x[i].id).style.display = "none";
+          }
+  }
+  </script>
+  EOF
+
+== Utilisation de with
+with est un petit script shell appelant ses arguments. Si aucun
+argument n'est spécifié, il se contente d'afficher l'entrée
+standard:
+
+  #!/bin/sh
+  
+  # by default, output the text
+  [ "$1" = "" ] && set -- cat
+  
+  for cmd in $*; do
+  	eval $cmd
+  done
+
+Il est ainsi possible d'appeller séquentiellement plusieurs formatteurs.
+Par exemple, un tel formatteur
+
+  Fmt: with tag lang p9man|mdown
+
+indique que l'on veut afficher les tags et les traductions de cet
+article, suivit du corps formaté par p9man puis mdown. P9man convertit
+les morceaux de texte de la forme commande(numéro) en un lien mdown
+vers la page manuel associée:
+
+  #!/bin/sh
+  
+  if [ "$1" = "" ]; then
+  	URL=http://plan9.bell-labs.com/magic/man2html/
+  else
+  	URL=$1
+  fi
+  
+  # assume mdown and thus don't replace in <pre><code> lines
+  sed '/^  /!s,\([a-z0-9\.]*\)(\([0-9]\)),[\1(\2)]('$URL'\2/\1),g'
+
+== Intégration avec git
+On se propose ici de versionner les différents articles ainsi
+que b.sh, les scripts auxiliaires et les différents éléments
+associés aux articles (feuilles de styles, images, etc.).
+
+Voici un exemple d'arborescence:
+
+  ./b.sh
+  ./imgs		# images
+  ./styles		# feuilles de styles
+  ./html		# fichiers générés par b.sh (DST)
+  ./utils		# scripts auxiliaires pour b.sh
+  ./articles	# les articles (SRC)
+
+Afin d'ignorer le contenu d'html lors du push, on le rajoute
+dans le .gitignore:
+
+  $ echo 'html*' > .gitignore
+  $ git add .gitignore
+
+L'idée est d'utiliser git pour qu'à chaque push depuis un
+ordinateur, le contenu du répository soit envoyé sur un
+serveur, et que les fichiers html y soient générés.
+Pour ce faire, on utilise des
+[bare repository](http://tips.awesom.eu/show?id=26), avec
+le script hooks/post-receive suivant:
+
+  #!/bin/sh
+  
+  GIT_WORK_TREE=~/www/blog git checkout -f
+  cd ~/www/blog
+  [ ! -d html/ ] && mkdir html/
+  sh b.sh articles/ html/
+
+Ainsi, à chaque fois que du contenu est posté sur le répository,
+celui-ci se clone dans \~\/www\/blog et regénère les articles. Il
+est alors possible d'utiliser les informations du commit:
+
+- les dates des articles peuvent être ajustées automatiquement;
+- de même pour les auteurs;
+- seuls les fichiers commités peuvent être recrées.
+
+= Notes
+blog.sh devrait tourner sans soucis sur un système disposant des
+outils posix classiques.

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+art=`echo $ART | sed 's/\(.*\)\..*/\1/'`
+
+echo '<p class="translations">Traductions:'
+for tr in `ls $art.* 2>/dev/null`; do
+	td=`basename $tr`.html
+	echo -n "<a href=\"$td\">"
+	echo -n $tr | sed 's/.*\.//'
+	echo -n '</a>, '
+done | sed '$s/, $//'
+echo '</p>'

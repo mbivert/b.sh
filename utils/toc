@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# table of content with mdown
+
+echo '<div id="toc">Table des matières:'
+awk '
+	/^=+ / {
+		for (i = 0; i < length($1)-1; i++)
+			printf("  ")
+		 $1="+"
+		 print
+	}
+' $ART | mdown
+echo '</div>'

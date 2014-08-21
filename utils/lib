@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# getattr attr file
+getattr() { sed -n "s/^$1: *//p" $2; }
+
+# fmtdate YYYMMDD
+fmtdate() { sed 's/\(....\)\(..\)\(..\)/\3-\2-\1/'; }
+
+# gettrad what lang; alias to avoid escaping
+gettrad() { awk -F':' "\$1 == \"$1\" && \$2 == \"$2\" { print \$3; }" utils/trads; }

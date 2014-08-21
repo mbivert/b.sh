@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ "$1" = "" ]; then
+	URL=http://plan9.bell-labs.com/magic/man2html/
+else
+	URL=$1
+fi
+
+# assume mdown and thus don't replace in <pre><code> lines
+sed '/^  /!s,\([a-z0-9\.]*\)(\([0-9]\)),[\1(\2)]('$URL'\2/\1),g'

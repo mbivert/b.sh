@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# by default, output the text
+[ "$1" = "" ] && set -- cat
+
+for cmd in $*; do
+	eval $cmd
+done
