@@ -1,6 +1,7 @@
 # Description
-This is a static generator for a blog writting in shell,
-uploaded for archival rather than for being really useful/continued.
+This is a static generator for a blog written in shell,
+uploaded for archival rather than for being really useful to
+others, continued or even optimized/cleaned.
 
 Check `articles/blog.{fr,en}` for a full description. French
 is the reference version (english seems to be missing the part
