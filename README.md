@@ -12,7 +12,7 @@ Main features are:
 - tagged articles `utils/tag`;
 - translated articles `utils/lang`;
 - table of content `utils/toc`;
-- link to man pages `utils/{obsdman,p9man`;
+- link to man pages `utils/{obsdman,p9man}`;
 - RSS feed generation `utils/rss`;
 - easy integration with git : use a
   [bare repository](http://tips.awesom.eu/show?id=26) with 
