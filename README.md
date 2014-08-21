@@ -17,14 +17,14 @@ Main features are:
 - RSS feed generation `utils/rss`;
 - easy integration with git : use a
   [bare repository](http://tips.awesom.eu/show?id=26) with 
-  the supplied `hook/post-receive` git hook
+  the `hook/post-receive` git hook (see §Testing)
 - use the formatter you want, be it `markdown`, or even `sh`.
   See `articles/index` and `articles/tags` for shell-script
   articles. The `b.sh` script itself can be copied to `articles/`;
 - article format header is trivial, thus easily extensible.
 
 # Ressources
-## Mdown
+## mdown
 Both `articles/blog.{fr,en}` were written using the venerable
 mdown written by Nhat Minh Lê (rz0). As git.huoc.org is un-available,
 see [here](http://awesom.eu/~mb/mdown.tgz) if you want to get
@@ -42,6 +42,29 @@ Once mdown installed,
 	(earth)% ./b.sh articles/ html/
 
 And browse to `file://$PWD/html/`.
+
+Assuming two machines `local` and `remote`, the following
+deploys the blog using a bare repository `$HOME/test.git` and
+the html output of the blog in `$HOME/www/test/html/`:
+(to be re-tested)
+
+	(local)% edit articles/myarticle
+	(local)% git commit articles/myarticle -m 'adding myarticle'
+	(local)% scp -r $PWD remote:/tmp/test
+
+	(remote)% cd ~ && git clone --bare /tmp/test/.git test.git
+	(remote)% mkdir -p ~/www/test
+	(remote)% cd ~/test.git
+	(remote)% cat > hooks/post-receive <<EOF
+	#!/bin/sh
+	GIT_WORK_TREE=~/www/test git checkout -f
+	cd $GIT_WORK_TREE
+	rm html/*
+	./b.sh articles/ html/
+	EOF
+
+	(local)% git remote add web remote:~/test.git
+	(local)% git push web +master:refs/heads/master
 
 # License
 Public domain.
