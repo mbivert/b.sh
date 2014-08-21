@@ -25,11 +25,9 @@ Main features are:
 # Ressources
 ## Mdown
 Both `articles/blog.{fr,en}` were written using the venerable
-mdown written by Nhat Minh Lê (rz0). As git.huoc.org is down,
+mdown written by Nhat Minh Lê (rz0). As git.huoc.org is un-available,
 see [here](http://awesom.eu/~mb/mdown.tgz) if you want to get
 it. Not guaranteed to be the last version thought.
-
-Once in path, you can generate the whole thing with:
 
 ## tao.png
 Original may be found
